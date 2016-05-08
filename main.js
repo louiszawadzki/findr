@@ -9,6 +9,7 @@ const fs = require('fs');
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 var mainWindow = null;
+var currentDir = '/home/louis/Bureau';
 
 // Quit when all windows are closed.
 app.on('window-all-closed', function() {
@@ -18,6 +19,12 @@ app.on('window-all-closed', function() {
     app.quit();
   }
 });
+
+var sendDir = function (directory) {
+  fs.readdir(directory, function(err, list) {
+    mainWindow.webContents.send('directory', list);
+  });
+};
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -29,9 +36,16 @@ app.on('ready', function() {
   mainWindow.loadURL('file://' + __dirname + '/index.html');
 
   mainWindow.webContents.on('did-finish-load', () => {
-    fs.readdir('/home/louis', function(err, list) {
-      mainWindow.webContents.send('directory', list);
-    });
+    mainWindow.webContents.send('init');
+    sendDir(currentDir)
+  });
+
+  ipc.on('back', () => {
+    var rootPosition = currentDir.lastIndexOf("/");
+    if (rootPosition > 0) {
+      currentDir = currentDir.substring(0, rootPosition);
+      sendDir(currentDir);
+    }
   });
 
   // Emitted when the window is closed.
